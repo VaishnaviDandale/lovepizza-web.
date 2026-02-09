@@ -1,101 +1,96 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { PizzaChoice, getBasePrice, calculateBill } from '@/lib/pizzaPricing';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { PizzaChoice, getBasePrice, calculateBill } from '@/lib/pizzaPricing'
 
 type Order = {
-  id: string;
-  pizza_type: string;
-  base_price: number;
-  extra_toppings: boolean;
-  extra_cheese: boolean;
-  takeaway: boolean;
-  total: number;
-  created_at: string;
-  user_id?: string;
-  status: string;
-  paid: boolean;
-};
+  id: string
+  pizza_type: string
+  base_price: number
+  extra_toppings: boolean
+  extra_cheese: boolean
+  takeaway: boolean
+  total: number
+  created_at: string
+  user_id?: string
+  status: string
+  paid: boolean
+}
 
 export default function Home() {
-  const router = useRouter();
-  const [choice, setChoice] = useState<PizzaChoice>('Veg');
-  const [extraToppings, setExtraToppings] = useState(false);
-  const [extraCheese, setExtraCheese] = useState(false);
-  const [takeaway, setTakeaway] = useState(false);
-  const [total, setTotal] = useState<number | null>(null);
-  const [msg, setMsg] = useState('');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const router = useRouter()
+  const [choice, setChoice] = useState<PizzaChoice>('Veg')
+  const [extraToppings, setExtraToppings] = useState(false)
+  const [extraCheese, setExtraCheese] = useState(false)
+  const [takeaway, setTakeaway] = useState(false)
+  const [total, setTotal] = useState<number | null>(null)
+  const [msg, setMsg] = useState('')
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
-  // Get current logged‑in user once
   useEffect(() => {
     const getUser = async () => {
-      setLoadingUser(true);
-      const { data, error } = await supabase.auth.getUser();
+      setLoadingUser(true)
+      const { data, error } = await supabase.auth.getUser()
       if (error || !data?.user) {
-        setUserId(null);
-        setUserEmail(null);
+        setUserId(null)
+        setUserEmail(null)
       } else {
-        setUserId(data.user.id);
-        setUserEmail(data.user.email ?? null);
+        setUserId(data.user.id)
+        setUserEmail(data.user.email ?? null)
       }
-      setLoadingUser(false);
-    };
+      setLoadingUser(false)
+    }
+    getUser()
+  }, [])
 
-    getUser();
-  }, []);
-
-  // Redirect to login if not logged in
   useEffect(() => {
     if (!loadingUser && !userId) {
-      router.push('/login');
+      router.push('/landing')
     }
-  }, [loadingUser, userId, router]);
+  }, [loadingUser, userId, router])
 
-  // Fetch orders only for this user
   const fetchOrders = async (uid: string) => {
-    setLoadingOrders(true);
+    setLoadingOrders(true)
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .eq('user_id', uid)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(10)
 
     if (!error && data) {
-      setOrders(data as Order[]);
+      setOrders(data as Order[])
     } else {
-      console.error('Error fetching orders', error);
+      console.error('Error fetching orders', error)
     }
-    setLoadingOrders(false);
-  };
+    setLoadingOrders(false)
+  }
 
-  // When we know the userId, load their orders
   useEffect(() => {
     if (userId) {
-      fetchOrders(userId);
+      fetchOrders(userId)
     } else {
-      setOrders([]);
+      setOrders([])
     }
-  }, [userId]);
+  }, [userId])
 
   const handleOrder = async () => {
-    setMsg('');
+    setMsg('')
 
     if (!userId) {
-      setMsg('Please login first to place an order.');
-      return;
+      setMsg('Please login first to place an order.')
+      return
     }
 
-    const basePrice = getBasePrice(choice);
-    const bill = calculateBill(basePrice, extraToppings, extraCheese, takeaway);
-    setTotal(bill);
+    const basePrice = getBasePrice(choice)
+    const bill = calculateBill(basePrice, extraToppings, extraCheese, takeaway)
+    setTotal(bill)
 
     const { data, error } = await supabase.from('orders').insert([
       {
@@ -109,27 +104,27 @@ export default function Home() {
         status: 'pending',
         paid: false,
       },
-    ]);
-    console.log('SUPABASE INSERT RESULT', { data, error });
+    ])
+    console.log('SUPABASE INSERT RESULT', { data, error })
 
     if (error) {
-      console.error(error);
-      setMsg('Error saving order');
+      console.error(error)
+      setMsg('Error saving order')
     } else {
-      setMsg('Order saved!');
-      await fetchOrders(userId);
+      setMsg('Order saved!')
+      await fetchOrders(userId)
     }
-  };
+  }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUserId(null);
-    setUserEmail(null);
-    setOrders([]);
-    setTotal(null);
-    setMsg('Logged out.');
-    router.push('/login');
-  };
+    await supabase.auth.signOut()
+    setUserId(null)
+    setUserEmail(null)
+    setOrders([])
+    setTotal(null)
+    setMsg('Logged out.')
+    router.push('/landing')
+  }
 
   return (
     <div className="app-root">
@@ -142,32 +137,27 @@ export default function Home() {
 
           <div className="header-right">
             {userEmail ? (
-              <div
-                className="user-info"
-                style={{ display: 'flex', gap: '12px', alignItems: 'center' }}
-              >
-                <span
-                  className="user-email"
+              <div className="user-info" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <span 
                   onClick={() => router.push('/profile')}
-                  style={{
-                    fontSize: '0.9rem',
+                  style={{ 
+                    fontSize: '0.9rem', 
                     opacity: 0.9,
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                   }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.opacity = '1';
-                    e.currentTarget.style.color = '#22c55e';
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1'
+                    e.currentTarget.style.color = '#22c55e'
                   }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.opacity = '0.9';
-                    e.currentTarget.style.color = 'white';
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0.9'
+                    e.currentTarget.style.color = 'white'
                   }}
                 >
                   {userEmail}
                 </span>
                 <button
-                  className="button-secondary"
                   onClick={handleLogout}
                   style={{
                     padding: '6px 14px',
@@ -216,20 +206,20 @@ export default function Home() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 type PizzaFormProps = {
-  choice: PizzaChoice;
-  setChoice: (v: PizzaChoice) => void;
-  extraToppings: boolean;
-  setExtraToppings: (v: boolean) => void;
-  extraCheese: boolean;
-  setExtraCheese: (v: boolean) => void;
-  takeaway: boolean;
-  setTakeaway: (v: boolean) => void;
-  onOrder: () => void;
-};
+  choice: PizzaChoice
+  setChoice: (v: PizzaChoice) => void
+  extraToppings: boolean
+  setExtraToppings: (v: boolean) => void
+  extraCheese: boolean
+  setExtraCheese: (v: boolean) => void
+  takeaway: boolean
+  setTakeaway: (v: boolean) => void
+  onOrder: () => void
+}
 
 function PizzaForm(props: PizzaFormProps) {
   const {
@@ -242,7 +232,7 @@ function PizzaForm(props: PizzaFormProps) {
     takeaway,
     setTakeaway,
     onOrder,
-  } = props;
+  } = props
 
   return (
     <>
@@ -292,13 +282,13 @@ function PizzaForm(props: PizzaFormProps) {
         <span>Place order</span>
       </button>
     </>
-  );
+  )
 }
 
 type OrderSummaryProps = {
-  total: number | null;
-  msg: string;
-};
+  total: number | null
+  msg: string
+}
 
 function OrderSummary({ total, msg }: OrderSummaryProps) {
   return (
@@ -309,114 +299,96 @@ function OrderSummary({ total, msg }: OrderSummaryProps) {
         </p>
       )}
       {msg && (
-        <p
-          className={
-            msg === 'Order saved!' || msg === 'Logged out.'
-              ? 'message-ok'
-              : 'message-error'
-          }
-        >
+        <p className={msg === 'Order saved!' || msg === 'Logged out.' ? 'message-ok' : 'message-error'}>
           {msg}
         </p>
       )}
     </div>
-  );
+  )
 }
 
 type RecentOrdersProps = {
-  orders: Order[];
-  loading: boolean;
-  userId: string | null;
-  onOrderCancel: () => void;
-};
+  orders: Order[]
+  loading: boolean
+  userId: string | null
+  onOrderCancel: () => void
+}
 
 function RecentOrders({ orders, loading, userId, onOrderCancel }: RecentOrdersProps) {
-  const [cancelMsg, setCancelMsg] = useState('');
-  const lastOrderTime =
-    orders.length > 0 ? new Date(orders[0].created_at).toLocaleString() : null;
+  const [cancelMsg, setCancelMsg] = useState('')
+  const lastOrderTime = orders.length > 0 
+    ? new Date(orders[0].created_at).toLocaleString()
+    : null
 
   const handleCancelOrder = async (orderId: string) => {
-    setCancelMsg('Cancelling...');
-
+    setCancelMsg('Cancelling...')
+    
     const { error } = await supabase
       .from('orders')
       .update({ status: 'cancelled' })
-      .eq('id', orderId);
+      .eq('id', orderId)
 
     if (error) {
-      setCancelMsg('Error: ' + error.message);
-      setTimeout(() => setCancelMsg(''), 3000);
+      setCancelMsg('Error: ' + error.message)
+      setTimeout(() => setCancelMsg(''), 3000)
     } else {
-      setCancelMsg('Order cancelled successfully!');
-      setTimeout(() => setCancelMsg(''), 2000);
-      setTimeout(() => onOrderCancel(), 1000);
+      setCancelMsg('Order cancelled successfully!')
+      setTimeout(() => setCancelMsg(''), 2000)
+      setTimeout(() => onOrderCancel(), 1000)
     }
-  };
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return '#fbbf24';
+        return '#fbbf24'
       case 'confirmed':
-        return '#60a5fa';
+        return '#60a5fa'
       case 'preparing':
-        return '#a78bfa';
+        return '#a78bfa'
       case 'ready':
-        return '#34d399';
+        return '#34d399'
       case 'delivered':
-        return '#10b981';
+        return '#10b981'
       case 'cancelled':
-        return '#ef4444';
+        return '#ef4444'
       default:
-        return '#6b7280';
+        return '#6b7280'
     }
-  };
+  }
 
   return (
     <>
       <h2 className="section-heading">Recent orders</h2>
-
+      
       {cancelMsg && (
-        <p
-          style={{
-            padding: '8px 12px',
-            marginBottom: '12px',
-            borderRadius: '4px',
-            background: cancelMsg.includes('Error') ? '#fee2e2' : '#d1fae5',
-            color: cancelMsg.includes('Error') ? '#991b1b' : '#065f46',
-            fontSize: '0.9rem',
-          }}
-        >
+        <p style={{ 
+          padding: '8px 12px', 
+          marginBottom: '12px', 
+          borderRadius: '4px',
+          background: cancelMsg.includes('Error') ? '#fee2e2' : '#d1fae5',
+          color: cancelMsg.includes('Error') ? '#991b1b' : '#065f46',
+          fontSize: '0.9rem'
+        }}>
           {cancelMsg}
         </p>
       )}
 
       {loading && <p className="bill-text">Loading orders...</p>}
-
+      
       {!loading && !userId && (
         <p className="bill-text">Login to see your orders.</p>
       )}
-
+      
       {!loading && userId && (
         <>
           {orders.length > 0 && (
-            <div
-              style={{
-                marginBottom: '16px',
-                paddingBottom: '12px',
-                borderBottom: '1px solid rgba(148,163,184,0.3)',
-              }}
-            >
+            <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid rgba(148,163,184,0.3)' }}>
               <p className="bill-text" style={{ marginBottom: '6px' }}>
-                <span style={{ fontWeight: 'bold' }}>Total orders:</span>{' '}
-                {orders.length}
+                <span style={{ fontWeight: 'bold' }}>Total orders:</span> {orders.length}
               </p>
-              <p
-                className="bill-text"
-                style={{ fontSize: '0.85rem', opacity: 0.8 }}
-              >
-                <span style={{ fontWeight: 'bold' }}>Last order:</span>{' '}
-                {lastOrderTime}
+              <p className="bill-text" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                <span style={{ fontWeight: 'bold' }}>Last order:</span> {lastOrderTime}
               </p>
             </div>
           )}
@@ -428,74 +400,48 @@ function RecentOrders({ orders, loading, userId, onOrderCancel }: RecentOrdersPr
           {orders.length > 0 && (
             <ul className="orders-list">
               {orders.map(order => (
-                <li
-                  key={order.id}
-                  style={{
-                    paddingBottom: '12px',
-                    marginBottom: '12px',
-                    borderBottom: '1px solid rgba(148,163,184,0.2)',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'start',
-                      gap: '8px',
-                    }}
-                  >
+                <li key={order.id} style={{ paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid rgba(148,163,184,0.2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
                     <div style={{ flex: 1 }}>
                       <span className="order-time">
                         {new Date(order.created_at).toLocaleTimeString()}
                       </span>
-                      <span
-                        className="order-type"
-                        style={{ marginLeft: '8px' }}
-                      >
+                      <span className="order-type" style={{ marginLeft: '8px' }}>
                         {order.pizza_type}
                       </span>
                     </div>
                     <span className="order-total">Rs. {order.total}</span>
                   </div>
-
-                  <div
-                    style={{
-                      marginTop: '8px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        background: getStatusColor(order.status),
-                        color: 'white',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase',
-                      }}
-                    >
+                  
+                  <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px', 
+                      background: getStatusColor(order.status),
+                      color: 'white',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase'
+                    }}>
                       {order.status}
                     </span>
-
-                      {order.status === 'pending' && (
-                        <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            background: '#ef4444',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      )}
+                    
+                    {order.status === 'pending' && (
+                      <button
+                        onClick={() => handleCancelOrder(order.id)}
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          background: '#ef4444',
+                          border: 'none',
+                          color: 'white',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}
@@ -504,5 +450,5 @@ function RecentOrders({ orders, loading, userId, onOrderCancel }: RecentOrdersPr
         </>
       )}
     </>
-  );
+  )
 }
