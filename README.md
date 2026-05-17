@@ -1,4 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍕 LovePizza Order Hub
+
+A full‑stack pizza ordering web app built with **Next.js + Supabase**, deployed on **Vercel**.  
+Users can select pizzas and extras, instantly view the bill, and track recent orders.
+
+---
+
+## 🚀 Features
+- Real‑time billing with instant updates
+- Order persistence in Supabase (100+ test orders processed)
+- Card‑based UI with scalability for images & login
+- Deployed live on Vercel
+
+---
+
+## 🛠 Tech Stack
+- **Frontend:** Next.js, HTML, CSS, JavaScript  
+- **Backend:** Supabase (PostgreSQL)  
+- **Deployment:** Vercel  
+- **Version Control:** Git/GitHub
+
+---
+
+## 📊 Impact
+- Reduced manual order tracking  
+- Improved order visibility with live updates  
+- Designed for scalability (future login & image integration)
+
+---
+
+## 📸 Demo
+- [Live App Link](https://your-vercel-link.com)  
+- Screenshots/GIFs of ordering flow (add here)
+
+---
+
+## ⚙️ Setup
+1. Clone the repo:  
+   ```bash
+   git clone https://github.com/VaishnaviDandale/LovePizza.git
+
 
 ## Getting Started
 
